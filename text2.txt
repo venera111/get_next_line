@@ -1,0 +1,2 @@
+All heap allocated memory space must be properly freed when necessary. No leaks
+will be tolerated.
