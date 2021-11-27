@@ -10,7 +10,7 @@
 gcc -Wall -Wextra -Werror -D BUFFER_SIZE=42 main.c get_next_line.c get_next_line_utils.c get_next_line.h
 3. Запустить исполняемый файл ./a.out
 Программа выводит первую строку файла
-4. Проверка на учетки памяти:
+4. Проверка на утечки памяти:
 - раскомментировать строку в файле main.c: sleep(10000)
 - ввести команду в другом терминале с названием исполняемого файла: leaks a.out
 Команда выводит количество байт, которые являются ликами.
@@ -21,7 +21,7 @@ gcc -Wall -Wextra -Werror -D BUFFER_SIZE=42 main.c get_next_line.c get_next_line
 gcc -Wall -Wextra -Werror -D BUFFER_SIZE=42 main.c get_next_line.c get_next_line_utils.c get_next_line.h
 3. Запустить исполняемый файл ./a.out
 Программа выводит первые строки файлов text.txt, text1.txt, text2.txt
-4. Проверка на учетки памяти:
+4. Проверка на утечки памяти:
 - раскомментировать строку в файле main.c: sleep(10000)
 - ввести команду в другом терминале с названием исполняемого файла: leaks a.out
 Команда выводит количество байт, которые являются ликами.
