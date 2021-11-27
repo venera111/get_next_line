@@ -1,116 +1,147 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qestefan <qestefan@student.21-school.ru    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/10/25 22:51:24 by qestefan          #+#    #+#             */
+/*   Updated: 2021/10/27 12:05:18 by qestefan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "get_next_line_bonus.h"
 
-static char	*ft_save_buffer(char *str, char *buffer)
+static char	*ft_save_buffer(char *str, char *buffer)			// принимает указаталь на результирующую строку и указатель на буффер, который нужно в нее записать
 {
-	char	*temp;
+	char	*temp;												// сохраняем адрес результирующей строки до присоединения
 
-	if (str)
+	if (str)													// если str не пуста,
 	{
-		temp = str;
-		str = ft_strjoin(str, buffer);
-		free(temp);
+		temp = str;												// сохраняем адрес на строку для последующего освобождения
+		str = ft_strjoin(str, buffer);							// так как ft_strjoin выделяет память и под str, и под buffer
+		free(temp);												// освобожаем область первоначальной строки, переданной в ft_save_buffer
 	}
-	else
-		str = ft_strjoin(str, buffer);
+	else														// если по указателю ничего не содержится,
+		str = ft_strjoin(str, buffer);							// передаем адрес пустой строки str и адрес buffer'a
+																// ft_strjoin возвращает соединенную строку str+buffer
 	return (str);
 }
 
-static void	ft_del_fd(t_gnl **head, t_gnl *temp)
+static void	ft_del_fd(t_gnl **head, t_gnl *temp)				// удаляет элемент списка, если строка remaind пуста
+																// в цикле проходится по всему списку head, благодяря указателю
+																// и удаляет пустой элемент
+																// указатель head мы сохранили, чтобы всегда помнить начало односвязного списка для очистки памяти
+																// и избавления от ликов
 {
 	t_gnl	*prev;
 
 	if (!(*head) || !head)
 		return ;
-	if (*head == temp)
+	if (*head == temp)											// если адреса на head и temp совпадают (на первой итерации когда создается только одна структура)
 	{
-		*head = (*head)->next;
-		free(temp);
+		*head = (*head)->next;									// обращаем указатель на структуру к NULL (в структуре ничего не содержится)
+																// следовательно указать ни на что не будет указывать
+		free(temp);												// и освобождаем область памяти с пустой строкой для отсутсвия утечек
 	}
-	else
+	else														// если указатели на начало списка и на элемент структуры не совпали
 	{
-		prev = *head;
-		while (prev->next != temp)
-			prev = prev->next;
-		prev->next = temp->next;
-		free(temp);
+		prev = *head;											// значит, сохраняем адрес на начало нашего списка в prev
+		while (prev->next != temp)								// пока мы не дошли до момента, когда указатель на следующий элемент списка
+																// не указывает на temp, мы пересаписываем адреса так, что
+			prev = prev->next;									// prev в конечном итоге укажет на temp
+		prev->next = temp->next;								// мы нашли элемент temp, где prev->next совпал с temp->next
+		free(temp);												// соответственно, нам нужно очистить эту область памяти с пустой строкой (очистить память от структуры)
 	}
 }
 
-static char	*ft_get_line_remainder(t_gnl **head, t_gnl *temp)
+static char	*ft_get_line_remainder(t_gnl **head, t_gnl *temp)			// принимает указатель на указатель на стат. обл. памяти и указатель на элемент списка
 {
 	char	*leak;
 	size_t	i;
 	char	*line;
 
-	if (!(temp->remaind))
+	if (!(temp->remaind))												// если в строке не содержатся никакие символы
 	{
-		ft_del_fd(head, temp);
+		ft_del_fd(head, temp);											// удаляем данный элемент списка с пустой строкой remaind
 		return (NULL);
 	}
 	i = 0;
-	while ((temp->remaind)[i] != '\n' && (temp->remaind)[i])
-		i++;
-	if (i < ft_strlen(temp->remaind))
+	while ((temp->remaind)[i] != '\n' && (temp->remaind)[i])			// пока в строке не встретили \n и строка remaind существует
+		i++;															// i переходит на позицию, где находится \n
+	if (i < ft_strlen(temp->remaind))									// если \n находится где-то внутри строки remaind
 	{
-		leak = temp->remaind;
-		line = ft_substr(leak, 0, ++i);
-		temp->remaind = ft_substr(temp->remaind, i, ft_strlen(temp->remaind));
-		free(leak);
+		leak = temp->remaind;											// начало remaind сохраняем в указателе leak
+		line = ft_substr(leak, 0, ++i);									// в line записываем ту часть строки, которая до \n, включая его и \0
+		temp->remaind = ft_substr(temp->remaind, i, ft_strlen(temp->remaind));	// в remaind сохраняем обставшуюся часть строки после \n
+		free(leak);														// освобождаем память переданной строки remaind, так как на этапе
+																		// получения частей строки до \n и после \n, мы выделяли память отдельно
+																		// под каждую часть
 	}
 	else
 	{
 		line = temp->remaind;
 		temp->remaind = NULL;
 	}
-	return (line);
+	return (line);														// возвращаем строкуБ которая до \n, включая его и \0
 }
 
-static t_gnl	*ft_get_add_fd(int fd, t_gnl **head)
+static t_gnl	*ft_get_add_fd(int fd, t_gnl **head)			// функция принимает файловый дескриптор, указатель на указатель на статическую область памяти
+																// где будет храниться элемет односвязного списка,
+																// если область пуста, то создается новый элемент в ft_lstnew
+																// и возвращается указатель на новую статическую область памяти в качестве структуры
 {
-	t_gnl	*new;
+	t_gnl	*new;												// указатель на новую структуру
 	t_gnl	*existed;
 
-	if (!head || !(*head))
+	if (!head || !(*head))										// если по указателю на указатель (**head) или по указателю (*head) ничего не содержится
 	{
-		new = ft_lstnew(fd);
-		*head = new;
-		return (*head);
+		new = ft_lstnew(fd);									// создаем новый элемент односвязного списка, передаем файловый дескриптор
+		*head = new;											// разыменовываем указатель на указатель и присваиваем head адрес нашего нового элемента структуры
+		return (*head);											// возвращаем указатель на новую структуру
 	}
-	existed = *head;
-	while (existed)
+	existed = *head;											// если в head уже что-то записано и была выделена память под структуру/ы
+																// мы сохраняем адрес на начало структуры head в переменной указателе existed
+	while (existed)												// пока существует список
 	{
-		if (existed->fd == fd)
+		if (existed->fd == fd)									// если файловые дескрипторы совпадают, просто возвращаем указатель на структуру
 			return (existed);
-		existed = existed->next;
+		existed = existed->next;								// если не совпадают, то existed будет указывать на следующий элемент списка
 	}
-	new = ft_lstnew(fd);
-	new->next = *head;
-	*head = new;
+	new = ft_lstnew(fd);										// добавляем структуру с новым fd
+	new->next = *head;											// адрес на следущий элемент - это адрес начала списка
+																// (мы добавили новую структуру в начало списка!!!!)
+	*head = new;												// переместили указатель на начало списка туда, где была создана новая структура
+																// теперь head указывает на начало списка, а новый элемент располагается в самом его начале
 	return (*head);
 }
 
 char	*get_next_line(int fd)
 {
-	static t_gnl	*head;
+	static t_gnl	*head;										// указатель на статическую область памяти, созданную с помощью структуры
 	t_gnl			*temp;
 	int				readed;
 	char			*buffer;
 
-	if (BUFFER_SIZE <= 0 || fd < 0)
-		return (NULL);
-	buffer = (char *)malloc(sizeof(char) * (BUFFER_SIZE + 1));
-	if (!buffer)
-		return (NULL);
-	temp = ft_get_add_fd(fd, &head);
-	readed = read(temp->fd, buffer, BUFFER_SIZE);
-	while (readed > 0)
+	if (BUFFER_SIZE <= 0 || fd < 0)								// проверка размера считываемых данных (в байтах) и работающего файлового дескриптора
+		return (NULL);											// возвращаем null, если условие выполнено
+	buffer = (char *)malloc(sizeof(char) * (BUFFER_SIZE + 1));	// выделение памяти для части даннах + 1 байт для завершающего символа строки буфера
+	if (!buffer)												// если в выделении памяти по какой-либо причине отказано,
+		return (NULL);											// возвращаем null
+	temp = ft_get_add_fd(fd, &head);							// функция принимает файловый дескриптор и указатель на указатель на статическую область памяти в виде структуры
+																// в temp кладем адрес на новый элемент односвязного списка
+	readed = read(temp->fd, buffer, BUFFER_SIZE);				// читаем из файлового дескриптора часть строки размером BUFFER_SIZE и записываем в buffer
+																// read запоминает позицию считывания из файла
+	while (readed > 0)											// read возвращает количество считанный байт, если их > 0, значит, сичтывание произошло
 	{
-		buffer[readed] = '\0';
-		temp->remaind = ft_save_buffer(temp->remaind, buffer);
-		if (ft_search_new_line(temp->remaind))
-			break ;
+		buffer[readed] = '\0';									// в конец buffer'а кладем завершающий символ строки
+		temp->remaind = ft_save_buffer(temp->remaind, buffer);	// обращаясь к remaind, где будет храниться строка, записываем в ее наш считанный buffer
+																// ft_save_buffer возвращает строку str+buffer
+		if (ft_search_new_line(temp->remaind))					// если в нашей новой строке обнаружили \n
+			break ;												// выходим из цикла и освобожаем память buffer'a
 		readed = read(temp->fd, buffer, BUFFER_SIZE);
 	}
-	free(buffer);
-	return (ft_get_line_remainder(&head, temp));
+	free(buffer);												// освобожаем память buffer'a
+	return (ft_get_line_remainder(&head, temp));				// функция принимает указатель на указатель на стат. обл. памяти и указатель на элемент списка
+																// возвращает готовую строку до \n, включая \n и \0 (для печати в main)
 }

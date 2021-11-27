@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qestefan <qestefan@student.21-school.ru    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/10/23 19:25:53 by qestefan          #+#    #+#             */
+/*   Updated: 2021/10/27 11:31:02 by qestefan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "get_next_line.h"
 
 static bool	ft_search_new_line(char *str)
@@ -8,67 +20,73 @@ static bool	ft_search_new_line(char *str)
 	return (false);
 }
 
-static char	*ft_save_buffer(char *str, char *buffer)
+static char	*ft_save_buffer(char *str, char *buffer)			// принимает указатель на статическую область памяти и указатель на buffer
 {
-	char	*temp;
+	char	*temp;												// указатель для сохранения адреса статической переменной str
 
-	if (str)
+	if (str)													// если стат. переменная не пуста
 	{
-		temp = str;
-		str = ft_strjoin(str, buffer);
-		free(temp);
+		temp = str;												// сохраняем адрес стат. переменной, чтобы потом очистить по нему информацию
+		str = ft_strjoin(str, buffer);							// соединяем строки: str и buffer, выделяя при этом память внутри ft_strjoin
+		free(temp);												// так как мы выделили память сразу для str+buffer и записали в новую статическую область
+																// нужно очистить старую область статической памяти, чтобы избавиться от утечек
 	}
-	else
-		str = ft_strdup(buffer);
-	return (str);
+	else														// если стат. переменная пуста, в нее сохраняем buffer, выделяя память
+		str = ft_strdup(buffer);								// в функции ft_strdup, так как выделение для этой области еще не произошло
+	return (str);												// возвращаем указатель на стат. область памяти
 }
 
-static char	*ft_get_line_remainder(char **str)
+static char	*ft_get_line_remainder(char **str)					// принимает указатель на указатель на стат. переменную str, где содержится строка со \n
 {
 	char	*temp;
 	size_t	i;
 	char	*line;
 
-	if (!(*str))
+	if (!(*str))												// если ничего не содержится в стат. обл., то возвращаем null
 		return (NULL);
 	i = 0;
-	while ((*str)[i] != '\n' && (*str)[i])
-		i++;
-	if (i < ft_strlen(*str))
+	while ((*str)[i] != '\n' && (*str)[i])						// пока мы не дошли до \n в строке и строка существует
+		i++;													// счетчик переводим на позицию, где находится \n
+	if (i < ft_strlen(*str))									// если \n находится где-то внутри строки str, а не в конце строки
 	{
-		temp = *str;
-		line = ft_substr(*str, 0, ++i);
-		*str = ft_substr(*str, i, ft_strlen(*str));
-		free(temp);
+		temp = *str;											// сохраняем (начало) указатель на str в указатель temp, разыменовывая указатель на указатель **str
+		line = ft_substr(*str, 0, ++i);							// в ft_substr передаем указатель на начало str, 0 как стартовую позицию
+																// и счетчик на начало части строки после '\n'
+		*str = ft_substr(*str, i, ft_strlen(*str));				// передали начало str, индекс элемента сразу после \n и длину строки str
+																// положили в str вторую часть строки после \n + \0 для завершения
+		free(temp);												// освободили старую область памяти, где первоначально хранилась str, переданная в качестве параметра функции
 	}
 	else
 	{
 		line = *str;
 		*str = NULL;
 	}
-	return (line);
+	return (line);												// вернули первую часть строки str включая \n и завершающий символ строки
 }
 
-char	*get_next_line(int fd)
+char	*get_next_line(int fd)									// принимает файловый дескриптор
 {
-	char		*buffer;
-	int			readed;
-	static char	*str;
+	char		*buffer;										// указатель на область памяти, где будет строка размером BUFFER_SIZE
+	int			readed;											// число записанный байт памяти в buffer
+	static char	*str;											// указатель на статическую область памяти для сохранения всех байт информации из файла (включая \n)
 
-	if (BUFFER_SIZE <= 0 || fd < 0)
-		return (NULL);
-	buffer = (char *)malloc(sizeof(char) * (BUFFER_SIZE + 1));
-	if (!buffer)
-		return (NULL);
-	readed = read(fd, buffer, BUFFER_SIZE);
-	while (readed > 0)
+	if (BUFFER_SIZE <= 0 || fd < 0)								// проверка размера считываемых данных (в байтах) и работающего файлового дескриптора
+		return (NULL);											// возвращаем null, если условие выполнено
+	buffer = (char *)malloc(sizeof(char) * (BUFFER_SIZE + 1));	// выделение памяти для части даннах + 1 байт для завершающего символа строки буфера
+	if (!buffer)												// если в выделении памяти по какой-либо причине отказано,
+		return (NULL);											// возвращаем null
+	readed = read(fd, buffer, BUFFER_SIZE);						// read считывает строку из файла по файловому деспритору размером BUFFER_SIZE и записывает в buffer
+																// read не пропускает \n, а записывает в buffer
+	while (readed > 0)											// read возвращает количество считанных байт, если > 0, значит есть чо считывать
 	{
-		buffer[readed] = '\0';
-		str = ft_save_buffer(str, buffer);
-		if (ft_search_new_line(str))
-			break ;
-		readed = read(fd, buffer, BUFFER_SIZE);
+		buffer[readed] = '\0';									// добавляем в конец строки buffer'а завершающий символ
+		str = ft_save_buffer(str, buffer);						// ft_save_buffer принимает указатель на статичесую область памяти и указатель на считанный buffer
+																// возвращает каждый раз строку, увеличенную на buffer
+																// статическая область памяти действует методом запоминания предыдущей информации в прошлых циклах
+		if (ft_search_new_line(str))							// если при считывании BUFFER_SIZE мы записали в str '\n', то выходим из цикла
+			break ;												// а после очищаем память в free(buffer) и в ft_get_line_remainder передаем указатель на указатель на стат. перемен. str
+		readed = read(fd, buffer, BUFFER_SIZE);					// read запоминает позицию, откуда нужно считывать в следующий раз
 	}
 	free(buffer);
-	return (ft_get_line_remainder(&str));
+	return (ft_get_line_remainder(&str));						// вернули первую часть строки, включая \n и \0
 }

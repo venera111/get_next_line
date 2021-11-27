@@ -1,72 +1,88 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line_utils.c                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qestefan <qestefan@student.21-school.ru    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/10/23 19:25:49 by qestefan          #+#    #+#             */
+/*   Updated: 2021/10/27 11:38:13 by qestefan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "get_next_line.h"
 
-size_t	ft_strlen(const char *s)
+size_t	ft_strlen(const char *s)									// считает количество символов строки до \0 не включая
 {
 	const char	*begin;
 
-	begin = s;
-	while (*s)
-		s++;
-	return ((size_t)(s - begin));
+	begin = s;														// сохраняем адрес начала строки s в указателе begin
+	while (*s)														// пока существует строка s
+		s++;														// переходим по указателю на последний элемент \0
+	return ((size_t)(s - begin));									// с помощью адресной арифметики вычитаем из конца начало
+																	// получаем целочисленное значение (количество символов строки)
 }
 
-char	*ft_strdup(char const *str)
+char	*ft_strdup(char const *str)									// строка для присоединения buffer к str, если в str ничего не содержится
 {
 	char	*result;
 	size_t	i;
 
-	result = (char *)malloc(sizeof(char) * (ft_strlen(str) + 1));
-	if (result)
+	result = (char *)malloc(sizeof(char) * (ft_strlen(str) + 1));	// выделяем память для str, считая количество buffer'a
+	if (result)														// если память выделилась
 	{
 		i = 0;
 		while (str[i])
 		{
-			result[i] = str[i];
+			result[i] = str[i];										// кладем в результат str наш считанный buffer
 			i++;
 		}
-		result[i] = '\0';
+		result[i] = '\0';											// и завершающий символ строки
 	}
-	return (result);
+	return (result);												// возвращаем указатель на str, который является указателем на стат. область
 }
 
-char	*ft_substr(char const *s, unsigned int start, size_t len)
+char	*ft_substr(char const *s, unsigned int start, size_t len)	// принимает начало str, стартовую позицию и начало части после \n
 {
 	char	*result;
 	size_t	i;
 
-	if (!s || len <= 0 || start >= ft_strlen(s))
-		return (NULL);
-	if (ft_strlen(s + start) < len)
-		len = ft_strlen(s + start);
-	result = (char *)malloc(sizeof(char) * (len + 1));
+	if (!s || len <= 0 || start >= ft_strlen(s))					// если str не существует или 0 >= длины строки, что равноценно
+		return (NULL);												// возвращаем null
+	if (ft_strlen(s + start) < len)									// если длина строки меньше, чем начало следующей части после \n
+		len = ft_strlen(s + start);									// то считаем длину этой строки
+	result = (char *)malloc(sizeof(char) * (len + 1));				// выделяем память для первой части строки до \n включая сам \n + 1 байт для записи \0
 	if (!result)
 		return (NULL);
 	i = 0;
-	while (s[i] && i < len)
-		result[i++] = s[start++];
-	result[i] = '\0';
+	while (s[i] && i < len)											// пока строка str существует и мы не дошли счетчиком до len
+		result[i++] = s[start++];									// записываем в result первую часть строки включая \n
+	result[i] = '\0';												// и добавляем \0 для завершения строки
+																	// визуально мы разпечатаем строку до \n, после этот символ перекинет каретку
+																	// на следующую строку, а затем и строка завершится
+																	// если не записать \n в result, то мы не добьемся перевода строки
 	return (result);
 }
 
-char	*ft_strjoin(char const *s1, char const *s2)
+char	*ft_strjoin(char const *s1, char const *s2)					// соединяет стат. переменную str и считанный buffer
 {
 	char	*result;
 	size_t	i;
 	size_t	j;
 
-	if (!s1 || !s2)
+	if (!s1 || !s2)													// проверка на наличие строк
 		return (NULL);
-	result = (char *)malloc(sizeof(char) * (ft_strlen(s1)
+	result = (char *)malloc(sizeof(char) * (ft_strlen(s1)			// выделяем память в куче для str и buffer'a одновременно + 1 байт для \0
 				+ ft_strlen(s2) + 1));
-	if (!result)
-		return (NULL);
+	if (!result)													// если в выделении памяти по какой-либо причине отказано,
+		return (NULL);												// возвращаем null
 	i = 0;
 	j = 0;
-	while (s1[j])
-		result[i++] = s1[j++];
+	while (s1[j])													// пока строка s1 сущесвует (строка str)
+		result[i++] = s1[j++];										// записываем ее символы в result
 	j = 0;
 	while (s2[j])
-		result[i++] = s2[j++];
-	result[i] = '\0';
-	return (result);
+		result[i++] = s2[j++];										// затем присоединяем строку s2 (строка buffer)
+	result[i] = '\0';												// в последний элемент кладем завершающий символ строки
+	return (result);												// возвращаем результат
 }
