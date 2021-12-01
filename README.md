@@ -16,7 +16,7 @@ The program outputs the first line of the file
 The command outputs the number of bytes that are faces.
 
 #### Bonus part
-1. Download the git clone repository https://github.com/venera111/get_next_line .git
+1. Download the git clone repository https://github.com/venera111/get_next_line.git
 2. Compilation of files indicating the size of the read buffer:
 gcc -Wall -Wextra -Werror -D BUFFER_SIZE=42 main.c get_next_line.c get_next_line_utils.c get_next_line.h
 3. Run the executable file ./a.out
